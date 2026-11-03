@@ -415,6 +415,11 @@ els.scanBtn.addEventListener('click', async () => {
     return;
   }
   showMessage('');
+  state.selectedIndex = 0;
+  state.selectedByCluster = {};
+  state.mergeIds = new Set();
+  els.mergeBtn.hidden = true;
+  renderPlan(null);
   setBusy(true);
   setProgress({ phase: 'list', current: 0, total: 1, file: opts.inputDir });
   const result = await window.api.scan(opts);
