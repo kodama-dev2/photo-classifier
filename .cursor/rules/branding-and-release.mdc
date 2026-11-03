@@ -12,6 +12,7 @@ alwaysApply: true
 - Do **not** use `Photo Classifier by GEMADIPADA` as the visible UI title.
 - `package.json` `productName` / electron-builder `productName` = `Photo Classifier` (app + DMG name).
 - Artifact pattern: `Photo Classifier-${version}-${os}-${arch}.${ext}`
+- App icon lives in `build/icon.png` + `build/icon.icns` (wired in electron-builder). Replace both when the logo changes, then bump + rebuild.
 
 ## Release / DMG
 

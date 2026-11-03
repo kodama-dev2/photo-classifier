@@ -1,7 +1,7 @@
 {
   "name": "photo-classifier",
   "productName": "Photo Classifier",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "description": "Electron app that sorts photos into folders by face",
   "main": "src/main.js",
@@ -38,6 +38,7 @@
     "npmRebuild": false,
     "files": [
       "src/**/*",
+      "build/icon.png",
       "package.json",
       "!node_modules/@tensorflow/tfjs-node/**",
       "!node_modules/@tensorflow/tfjs-node-gpu/**"
@@ -53,7 +54,9 @@
       "**/node_modules/sharp/**"
     ],
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "icon": "build/icon.png",
     "mac": {
+      "icon": "build/icon.icns",
       "category": "public.app-category.photography",
       "identity": "-",
       "hardenedRuntime": true,
@@ -70,6 +73,7 @@
       ]
     },
     "win": {
+      "icon": "build/icon.png",
       "target": [
         {
           "target": "zip",

@@ -113,6 +113,7 @@ function createWindow() {
     minHeight: 680,
     backgroundColor: '#e8ecf1',
     title: 'Photo Classifier',
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
