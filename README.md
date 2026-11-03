@@ -15,15 +15,20 @@ If `npm install` fails because the volume path has a trailing space, use `npm ru
 Same flow as pinterest-download: clean `release/`, then electron-builder.
 
 ```bash
-# macOS arm64 + x64 DMG (ad-hoc signed)
+# wipe release/, then mac DMG + win zip
+npm run dist:all
+
+# macOS only (wipes release/ first)
 npm run dist
 
-# Windows zip (x64 + arm64)
+# Windows zip only (does not wipe — keeps fresh Mac DMGs)
 npm run dist:win
 ```
 
-Artifacts land in `release/` as:
+Artifacts land in `release/` (old DMG/zip always wiped first):
 
-`Photo Classifier by GEMADIPADA-<version>-<os>-<arch>.<ext>`
+`Photo Classifier-<version>-<os>-<arch>.<ext>`
+
+UI title is **Photo Classifier** with small **by gemadipada** under it.
 
 Architecture and failure notes: [docs/face-sorting-electron-guide.md](docs/face-sorting-electron-guide.md).

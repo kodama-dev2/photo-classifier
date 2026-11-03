@@ -193,21 +193,20 @@ fieldset {
   padding: 0 2px 4px;
 }
 
-.eyebrow {
-  margin: 0 0 10px;
-  color: var(--mute);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .topbar h1 {
   margin: 0;
   font-size: clamp(28px, 5vw, 40px);
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1.12;
+}
+
+.byline {
+  margin: 6px 0 0;
+  color: var(--mute);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
 .lede {

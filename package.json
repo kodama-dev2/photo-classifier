@@ -1,7 +1,7 @@
 {
   "name": "photo-classifier",
-  "productName": "Photo Classifier by GEMADIPADA",
-  "version": "1.0.1",
+  "productName": "Photo Classifier",
+  "version": "1.0.2",
   "private": true,
   "description": "Electron app that sorts photos into folders by face",
   "main": "src/main.js",
@@ -10,10 +10,11 @@
     "postinstall": "node scripts/copy-models.js",
     "rebuild": "electron-rebuild -f -w @tensorflow/tfjs-node",
     "install:deps": "bash scripts/install.sh",
-    "clean:release": "node scripts/clean-release.cjs",
+    "clean:release": "node scripts/clean-release.cjs --all",
     "predist": "node scripts/copy-models.js",
-    "dist": "node scripts/clean-release.cjs && electron-builder --mac --arm64 --x64",
-    "dist:win": "node scripts/clean-release.cjs && electron-builder --win zip --x64 --arm64"
+    "dist": "node scripts/clean-release.cjs --all && electron-builder --mac --arm64 --x64",
+    "dist:win": "electron-builder --win zip --x64 --arm64",
+    "dist:all": "node scripts/clean-release.cjs --all && electron-builder --mac --arm64 --x64 && electron-builder --win zip --x64 --arm64"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -33,7 +34,7 @@
   },
   "build": {
     "appId": "local.gemadipada.photo-classifier",
-    "productName": "Photo Classifier by GEMADIPADA",
+    "productName": "Photo Classifier",
     "npmRebuild": false,
     "files": [
       "src/**/*",
