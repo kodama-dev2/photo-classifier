@@ -41,7 +41,9 @@ const els = {
   panelList: document.getElementById('panel-list'),
   tabPreview: document.getElementById('tab-preview'),
   tabList: document.getElementById('tab-list'),
-  themeBtn: document.getElementById('theme-btn')
+  themeBtn: document.getElementById('theme-btn'),
+  appVersion: document.getElementById('app-version'),
+  updateBtn: document.getElementById('update-btn')
 };
 
 function selectedValue(name) {
@@ -484,6 +486,78 @@ els.openOutputBtn.addEventListener('click', () => {
   if (state.lastOutput) window.api.reveal(state.lastOutput);
 });
 
+let latestUpdate = null;
+
+function setUpdateBusy(busy, label) {
+  els.updateBtn.disabled = busy;
+  els.updateBtn.dataset.state = busy ? 'busy' : els.updateBtn.dataset.state === 'available' ? 'available' : '';
+  if (label) els.updateBtn.textContent = label;
+}
+
+async function refreshUpdateState(silent) {
+  setUpdateBusy(true, 'Cek update…');
+  const info = await window.api.checkUpdate();
+  setUpdateBusy(false);
+
+  if (!info.ok) {
+    els.updateBtn.textContent = 'Cek update';
+    els.updateBtn.dataset.state = '';
+    if (!silent) showMessage(info.error || 'Gagal cek update', true);
+    return;
+  }
+
+  latestUpdate = info;
+  if (info.newer && info.asset) {
+    els.updateBtn.textContent = `Update ke v${info.latestVersion}`;
+    els.updateBtn.dataset.state = 'available';
+    if (!silent) {
+      showMessage(`Versi baru v${info.latestVersion} tersedia dari GitHub Releases.`);
+    }
+  } else {
+    els.updateBtn.textContent = 'Cek update';
+    els.updateBtn.dataset.state = '';
+    if (!silent) showMessage(`Sudah versi terbaru (v${info.currentVersion}).`);
+  }
+}
+
+els.updateBtn.addEventListener('click', async () => {
+  if (latestUpdate?.newer && latestUpdate?.asset) {
+    setUpdateBusy(true, 'Mengunduh 0%');
+    const result = await window.api.downloadUpdate();
+    setUpdateBusy(false);
+    if (!result.ok) {
+      els.updateBtn.textContent = `Update ke v${latestUpdate.latestVersion}`;
+      els.updateBtn.dataset.state = 'available';
+      showMessage(result.error || 'Gagal unduh update', true);
+      return;
+    }
+    if (result.skipped) {
+      els.updateBtn.textContent = 'Cek update';
+      els.updateBtn.dataset.state = '';
+      showMessage(result.reason || 'Sudah versi terbaru.');
+      return;
+    }
+    els.updateBtn.textContent = 'Cek update';
+    els.updateBtn.dataset.state = '';
+    latestUpdate = null;
+    showMessage(`Update v${result.latestVersion} diunduh. Pasang file yang terbuka, lalu tutup app ini.`);
+    return;
+  }
+  await refreshUpdateState(false);
+});
+
+window.api.onUpdateProgress((progress) => {
+  if (!els.updateBtn.disabled) return;
+  els.updateBtn.textContent = `Mengunduh ${progress.percent || 0}%`;
+});
+
 window.api.onModelsStatus(setModelStatus);
 window.api.onProgress(setProgress);
 window.api.getModelsStatus().then(setModelStatus);
+
+window.api.getAppInfo().then((info) => {
+  els.appVersion.textContent = `v${info.version}`;
+  document.title = `Photo Classifier v${info.version}`;
+});
+
+refreshUpdateState(true);

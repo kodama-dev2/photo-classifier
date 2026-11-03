@@ -3,6 +3,9 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   pickDir: (title) => ipcRenderer.invoke('pick-dir', { title }),
   getModelsStatus: () => ipcRenderer.invoke('models-status'),
+  getAppInfo: () => ipcRenderer.invoke('app-info'),
+  checkUpdate: () => ipcRenderer.invoke('check-update'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
   mediaUrl: (filePath) => `pcimg://local/?p=${encodeURIComponent(filePath)}`,
   onModelsStatus: (callback) => {
     const listener = (_event, status) => callback(status);
@@ -13,6 +16,11 @@ contextBridge.exposeInMainWorld('api', {
     const listener = (_event, data) => callback(data);
     ipcRenderer.on('progress', listener);
     return () => ipcRenderer.removeListener('progress', listener);
+  },
+  onUpdateProgress: (callback) => {
+    const listener = (_event, data) => callback(data);
+    ipcRenderer.on('update-progress', listener);
+    return () => ipcRenderer.removeListener('update-progress', listener);
   },
   scan: (options) => ipcRenderer.invoke('scan', options),
   reclassify: (options) => ipcRenderer.invoke('reclassify', options),

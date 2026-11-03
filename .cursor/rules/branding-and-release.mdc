@@ -24,3 +24,4 @@ alwaysApply: true
 - Never leave `1.0.0` next to `1.0.1` in `release/`.
 - Version always becomes an annotated/git tag `v{version}` pushed to origin; release page is the source of download links.
 - **Native deps:** never build with `npm ci --omit=optional`. Always run `npm run ensure:native` (or rely on `postinstall` / `predist`) so sharp + `@napi-rs/canvas` binaries for darwin-arm64, darwin-x64, win32-x64, and win32-arm64 are downloaded before electron-builder packs. Unpack `@img/**`, `@napi-rs/**`, and `sharp/**` from asar.
+- **In-app updates:** app checks GitHub Releases (`kodama-dev2/photo-classifier`) and can download the matching DMG/zip. Keep publishing version tags + assets so in-app update works. Show `v{version}` in the UI byline.

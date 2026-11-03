@@ -21,11 +21,14 @@
       <header class="topbar">
         <div class="brand">
           <h1>Photo Classifier</h1>
-          <p class="byline">by gemadipada</p>
+          <p class="byline">by gemadipada · <span id="app-version">v…</span></p>
           <p class="lede">Kelompokkan foto ke folder per orang.</p>
         </div>
         <div class="topbar-right">
           <p id="model-status" class="status" data-state="loading" aria-live="polite">Memuat model…</p>
+          <button type="button" class="btn glass-btn update-btn" id="update-btn" title="Cek update dari GitHub Releases">
+            Cek update
+          </button>
           <button type="button" class="icon-btn" id="theme-btn" aria-label="Ganti tema" title="Ganti tema">
             <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
               <circle cx="12" cy="12" r="4" />

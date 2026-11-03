@@ -209,6 +209,30 @@ fieldset {
   letter-spacing: 0.04em;
 }
 
+#app-version {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.update-btn {
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+.update-btn[data-state="available"] {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--ok) 22%, transparent);
+  color: var(--ink);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--ok) 35%, transparent);
+}
+
+.update-btn[data-state="busy"] {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 .lede {
   margin: 10px 0 0;
   max-width: 38rem;

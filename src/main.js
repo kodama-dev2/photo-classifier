@@ -4,6 +4,7 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 const { Worker } = require('worker_threads');
 const { listPhotos, classifyPhotos, mergeClusters, applyMoves, undoMoves } = require('./sorter');
+const { checkForUpdate, downloadUpdate } = require('./updater');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -66,7 +67,9 @@ function createWorker() {
 
   worker.on('message', (msg) => {
     if (msg.type === 'ready') {
-      sendStatus('ready', msg.backend === 'node' ? 'Model siap' : 'Model siap (CPU)');
+      const backendLabel =
+        msg.backend === 'wasm' ? 'WASM' : msg.backend === 'node' ? 'native' : 'CPU';
+      sendStatus('ready', `Model siap (${backendLabel})`);
       modelsReadyResolve();
       return;
     }
@@ -148,6 +151,34 @@ app.on('window-all-closed', () => {
 });
 
 ipcMain.handle('models-status', () => modelStatus);
+
+ipcMain.handle('app-info', () => ({
+  version: app.getVersion(),
+  name: app.getName(),
+  packaged: app.isPackaged,
+  platform: process.platform,
+  arch: process.arch
+}));
+
+ipcMain.handle('check-update', async () => {
+  try {
+    return await checkForUpdate();
+  } catch (err) {
+    return { ok: false, error: err.message, currentVersion: app.getVersion() };
+  }
+});
+
+ipcMain.handle('download-update', async (event) => {
+  try {
+    return await downloadUpdate((progress) => {
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('update-progress', progress);
+      }
+    });
+  } catch (err) {
+    return { ok: false, error: err.message, currentVersion: app.getVersion() };
+  }
+});
 
 ipcMain.handle('pick-dir', async (_event, { title }) => {
   const result = await dialog.showOpenDialog(win, {
