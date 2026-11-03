@@ -1,7 +1,7 @@
 {
   "name": "photo-classifier",
   "productName": "Photo Classifier",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "description": "Electron app that sorts photos into folders by face",
   "main": "src/main.js",
@@ -21,14 +21,21 @@
     "node": ">=22.12.0"
   },
   "supportedArchitectures": {
-    "os": ["darwin", "win32"],
-    "cpu": ["arm64", "x64"]
+    "os": [
+      "darwin",
+      "win32"
+    ],
+    "cpu": [
+      "arm64",
+      "x64"
+    ]
   },
   "author": "GEMADIPADA",
   "license": "MIT",
   "dependencies": {
     "@napi-rs/canvas": "^0.1.80",
     "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "^4.22.0",
     "@vladmandic/face-api": "^1.7.15",
     "sharp": "^0.34.4"
   },
@@ -69,7 +76,8 @@
     "asarUnpack": [
       "**/node_modules/@img/**",
       "**/node_modules/@napi-rs/**",
-      "**/node_modules/sharp/**"
+      "**/node_modules/sharp/**",
+      "**/node_modules/@tensorflow/tfjs-backend-wasm/**"
     ],
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "icon": "build/icon.png",

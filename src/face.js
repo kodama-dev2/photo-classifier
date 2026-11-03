@@ -11,7 +11,7 @@ const REQUIRED_MODELS = [
 
 let tf;
 let faceapi;
-let backend = 'node';
+let backend = 'wasm';
 
 function assertModels(dir) {
   if (!fs.existsSync(dir)) {
@@ -24,21 +24,34 @@ function assertModels(dir) {
   }
 }
 
+function configureWasmPaths() {
+  const { setWasmPaths } = require('@tensorflow/tfjs-backend-wasm');
+  const wasmDir = path.join(
+    path.dirname(require.resolve('@tensorflow/tfjs-backend-wasm/package.json')),
+    'wasm-out'
+  );
+  setWasmPaths(`${wasmDir}${path.sep}`);
+}
+
 async function initBackend() {
   if (tf) return;
 
-  try {
-    tf = require('@tensorflow/tfjs-node');
-    faceapi = require('@vladmandic/face-api');
-    backend = 'node';
-  } catch (err) {
-    tf = require('@tensorflow/tfjs');
-    faceapi = require('@vladmandic/face-api');
-    backend = 'cpu';
-    await tf.setBackend('cpu');
-  }
-
+  // Packaged builds do not ship @tensorflow/tfjs-node (native).
+  // Use face-api's wasm entry + @tensorflow/tfjs (+ optional wasm backend).
+  tf = require('@tensorflow/tfjs');
+  configureWasmPaths();
+  require('@tensorflow/tfjs-backend-wasm');
+  faceapi = require('@vladmandic/face-api/dist/face-api.node-wasm.js');
   faceapi.env.monkeyPatch({ Canvas, Image, ImageData });
+
+  try {
+    const ok = await tf.setBackend('wasm');
+    if (!ok) throw new Error('wasm backend unavailable');
+    backend = 'wasm';
+  } catch (err) {
+    await tf.setBackend('cpu');
+    backend = 'cpu';
+  }
 
   await tf.ready();
 }
