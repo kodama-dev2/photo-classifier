@@ -1,0 +1,8 @@
+node_modules/
+release/*
+dist/
+resources/models/
+*.log
+.DS_Store
+.agents/
+design-system/

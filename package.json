@@ -1,0 +1,87 @@
+{
+  "name": "photo-classifier",
+  "productName": "Photo Classifier by GEMADIPADA",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Electron app that sorts photos into folders by face",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "postinstall": "node scripts/copy-models.js",
+    "rebuild": "electron-rebuild -f -w @tensorflow/tfjs-node",
+    "install:deps": "bash scripts/install.sh",
+    "clean:release": "node scripts/clean-release.cjs",
+    "predist": "node scripts/copy-models.js",
+    "dist": "node scripts/clean-release.cjs && electron-builder --mac --arm64 --x64",
+    "dist:win": "node scripts/clean-release.cjs && electron-builder --win zip --x64 --arm64"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "author": "GEMADIPADA",
+  "license": "MIT",
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.80",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@vladmandic/face-api": "^1.7.15",
+    "sharp": "^0.34.4"
+  },
+  "optionalDependencies": {
+    "@tensorflow/tfjs-node": "^4.22.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.1",
+    "electron": "^33.4.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "local.gemadipada.photo-classifier",
+    "productName": "Photo Classifier by GEMADIPADA",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/models",
+        "to": "models"
+      }
+    ],
+    "asarUnpack": [
+      "**/node_modules/@tensorflow/**",
+      "**/node_modules/@napi-rs/canvas/**",
+      "**/node_modules/sharp/**"
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "mac": {
+      "category": "public.app-category.photography",
+      "identity": "-",
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "directories": {
+      "output": "release"
+    }
+  }
+}
