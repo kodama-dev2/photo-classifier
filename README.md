@@ -8,11 +8,13 @@ npm run rebuild
 npm start
 ```
 
+`npm install` / `postinstall` also downloads sharp + canvas binaries for macOS/Windows (arm64 + x64) via `ensure:native`.
+
 If `npm install` fails because the volume path has a trailing space, use `npm run install:deps` instead.
 
 ## Release build
 
-Same flow as pinterest-download: clean `release/`, then electron-builder.
+Same flow as pinterest-download: clean `release/`, then electron-builder. Do **not** use `npm ci --omit=optional`.
 
 ```bash
 # wipe release/, then mac DMG + win zip
