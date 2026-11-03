@@ -19,6 +19,7 @@ alwaysApply: true
 - Every release **must** wipe and replace files in `release/` immediately — no leftover older versions, no stale same-version DMG/zip.
 - Start with `node scripts/clean-release.cjs --all` (full wipe). After copy-back, prune with `node scripts/clean-release.cjs` so only current-version `.dmg`/`.zip` remain.
 - Do **not** run a full wipe between Mac and Windows builds in the same release — that deletes the fresh Mac DMGs. Use `npm run dist:all`, or `dist` then `dist:win` (win script does not wipe).
-- Flow: bump version → commit/push → build from space-free `/tmp` copy → copy artifacts into repo `release/` → prune to current version only.
+- Flow: bump version → commit/push → build from space-free `/tmp` copy → copy artifacts into repo `release/` → prune to current version only → **git tag `vX.Y.Z` + publish GitHub Release** with the DMG/zip assets (`gh release create vX.Y.Z …`).
 - Commands: `npm run dist` (mac), `npm run dist:win` (win, no wipe), `npm run dist:all` (wipe once, then mac+win).
 - Never leave `1.0.0` next to `1.0.1` in `release/`.
+- Version always becomes an annotated/git tag `v{version}` pushed to origin; release page is the source of download links.
