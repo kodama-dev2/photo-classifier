@@ -26,9 +26,6 @@
     "@vladmandic/face-api": "^1.7.15",
     "sharp": "^0.34.4"
   },
-  "optionalDependencies": {
-    "@tensorflow/tfjs-node": "^4.22.0"
-  },
   "devDependencies": {
     "@electron/rebuild": "^4.0.1",
     "electron": "^33.4.0",
@@ -37,9 +34,12 @@
   "build": {
     "appId": "local.gemadipada.photo-classifier",
     "productName": "Photo Classifier by GEMADIPADA",
+    "npmRebuild": false,
     "files": [
       "src/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/@tensorflow/tfjs-node/**",
+      "!node_modules/@tensorflow/tfjs-node-gpu/**"
     ],
     "extraResources": [
       {
@@ -48,7 +48,6 @@
       }
     ],
     "asarUnpack": [
-      "**/node_modules/@tensorflow/**",
       "**/node_modules/@napi-rs/canvas/**",
       "**/node_modules/sharp/**"
     ],
