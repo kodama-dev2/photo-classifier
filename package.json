@@ -1,7 +1,7 @@
 {
   "name": "photo-classifier",
   "productName": "Photo Classifier",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "private": true,
   "description": "Electron app that sorts photos into folders by face",
   "main": "src/main.js",
