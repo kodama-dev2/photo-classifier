@@ -126,15 +126,20 @@
               <button type="button" class="tab active" role="tab" id="tab-preview" aria-selected="true" aria-controls="panel-preview" data-view="preview">Pratinjau</button>
               <button type="button" class="tab" role="tab" id="tab-list" aria-selected="false" aria-controls="panel-list" data-view="list">Daftar</button>
             </div>
-            <button type="button" class="btn" id="merge-btn" hidden>Gabungkan</button>
-            <button type="button" class="btn primary" id="apply-btn">Terapkan</button>
+            <fieldset class="segment grid-density" aria-label="Jumlah kolom kartu">
+              <label><input type="radio" name="grid-cols" value="3" /><span>3</span></label>
+              <label><input type="radio" name="grid-cols" value="5" checked /><span>5</span></label>
+              <label><input type="radio" name="grid-cols" value="10" /><span>10</span></label>
+            </fieldset>
+            <button type="button" class="btn" id="exclude-small-btn" title="Kecualikan kartu 1 foto">Kecualikan kecil</button>
+            <button type="button" class="btn" id="exclude-large-btn" title="Kecualikan kartu ≥10 foto">Kecualikan besar</button>
             <button type="button" class="btn" id="undo-btn" hidden>Urungkan</button>
             <button type="button" class="link-btn" id="open-output-btn" hidden>Buka tujuan</button>
           </div>
         </div>
 
         <div class="view-panel" id="panel-preview" role="tabpanel" aria-labelledby="tab-preview">
-          <div class="candidate-grid" id="candidate-grid"></div>
+          <div class="candidate-grid cols-5" id="candidate-grid"></div>
           <p class="preview-empty" id="preview-empty" hidden>Belum ada kandidat orang.</p>
         </div>
 
@@ -152,6 +157,13 @@
         </div>
       </section>
     </div>
+
+    <div class="floating-actions" id="floating-actions" hidden>
+      <p class="floating-hint" id="floating-hint"></p>
+      <button type="button" class="btn" id="merge-btn" hidden>Gabungkan</button>
+      <button type="button" class="btn primary glass-btn" id="apply-btn">Terapkan</button>
+    </div>
+
     <script src="renderer.js"></script>
   </body>
 </html>

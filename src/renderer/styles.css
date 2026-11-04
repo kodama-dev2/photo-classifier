@@ -179,7 +179,7 @@ fieldset {
   z-index: 1;
   width: min(100% - 40px, var(--measure));
   margin: 0 auto;
-  padding: 40px 0 64px;
+  padding: 40px 0 110px;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -781,10 +781,26 @@ html[data-theme="system"] .icon-sun { display: none; }
   gap: 8px;
 }
 
+.grid-density label span {
+  min-width: 34px;
+  padding: 0 8px;
+}
+
 .candidate-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 16px;
+}
+
+.candidate-grid.cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.candidate-grid.cols-5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.candidate-grid.cols-10 {
+  grid-template-columns: repeat(10, minmax(0, 1fr));
 }
 
 .preview-empty {
@@ -805,18 +821,90 @@ html[data-theme="system"] .icon-sun { display: none; }
   background: var(--sheet-solid);
   min-width: 0;
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.05);
+  cursor: pointer;
+  transition: border-color var(--ease), box-shadow var(--ease), opacity var(--ease);
 }
 
 .candidate-card.picked {
-  border-color: color-mix(in srgb, var(--ink) 40%, var(--line));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 14%, transparent);
+  border-color: color-mix(in srgb, #2563eb 55%, var(--line));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #2563eb 28%, transparent),
+    0 0 0 1px color-mix(in srgb, #2563eb 35%, transparent);
+}
+
+.candidate-card.picked.merge-anchor {
+  border-color: color-mix(in srgb, #e11d48 60%, var(--line));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #e11d48 28%, transparent),
+    0 0 18px rgba(225, 29, 72, 0.28);
+}
+
+.candidate-card.excluded {
+  opacity: 0.48;
+  border-style: dashed;
 }
 
 .candidate-head {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
+}
+
+.exclude-btn {
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--mute);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.candidate-card.excluded .exclude-btn {
+  background: color-mix(in srgb, var(--bad) 16%, transparent);
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 35%, var(--line));
+}
+
+.floating-actions {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  translate: -50% 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--sheet) 88%, transparent);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  box-shadow: var(--shadow);
+  max-width: calc(100vw - 24px);
+}
+
+.floating-actions[hidden] {
+  display: none !important;
+}
+
+.floating-hint {
+  margin: 0;
+  padding: 0 8px;
+  color: var(--mute);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.floating-actions .btn {
+  min-height: 44px;
 }
 
 .candidate-head input[type="checkbox"] {
@@ -837,10 +925,50 @@ html[data-theme="system"] .icon-sun { display: none; }
 }
 
 .candidate-count {
-  grid-column: 2;
+  grid-column: 2 / 3;
   font-size: 12px;
   font-weight: 500;
   color: var(--mute);
+}
+
+@media (max-width: 1100px) {
+  .candidate-grid.cols-10 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .candidate-grid.cols-3,
+  .candidate-grid.cols-5,
+  .candidate-grid.cols-10 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .floating-actions {
+    left: 12px;
+    right: 12px;
+    translate: 0 0;
+    border-radius: 18px;
+    flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  .floating-hint {
+    width: 100%;
+    white-space: normal;
+  }
+
+  .floating-actions .btn {
+    flex: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .candidate-grid.cols-3,
+  .candidate-grid.cols-5,
+  .candidate-grid.cols-10 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .candidate-hero {

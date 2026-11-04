@@ -8,6 +8,15 @@ npm run rebuild
 npm start
 ```
 
+Local browser dev (real scan/apply, before Electron build):
+
+```bash
+npm run dev
+# open http://127.0.0.1:5179
+```
+
+Scan reads photos in **all subfolders** (so you can re-organize already sorted folders).
+
 `npm install` / `postinstall` also downloads sharp + canvas binaries for macOS/Windows (arm64 + x64) via `ensure:native`.
 
 If `npm install` fails because the volume path has a trailing space, use `npm run install:deps` instead.

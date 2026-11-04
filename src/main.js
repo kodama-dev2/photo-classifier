@@ -323,7 +323,8 @@ ipcMain.handle('apply', async (_event, options) => {
     lastOutputDir = options.outputDir;
     lastLog = await applyMoves(plan, {
       outputDir: options.outputDir,
-      action: options.action
+      action: options.action,
+      skipClusterIds: options.skipClusterIds || []
     }, sendProgress);
     return { ok: true, log: lastLog };
   } catch (err) {

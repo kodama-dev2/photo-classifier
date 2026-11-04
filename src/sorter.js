@@ -40,12 +40,44 @@ function safeFolderName(name) {
   return cleaned || 'unnamed';
 }
 
+function isInsideOrEqual(candidate, rootDir) {
+  if (!rootDir) return false;
+  const resolved = path.resolve(candidate);
+  const root = path.resolve(rootDir);
+  return resolved === root || resolved.startsWith(`${root}${path.sep}`);
+}
+
+async function isDirectoryEntry(entry, fullPath) {
+  if (entry.isDirectory()) return true;
+  if (entry.isSymbolicLink()) {
+    try {
+      return (await fs.promises.stat(fullPath)).isDirectory();
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Recursively list image files under dir (all subfolders).
+ * Optional skipDir is excluded only when it is a *child* of the scan root
+ * (e.g. output folder inside input). Same/parent output must not blank the scan.
+ */
 async function listPhotos(dir, skipDir) {
   const out = [];
-  const skip = skipDir ? path.resolve(skipDir) : null;
+  const root = path.resolve(dir);
+  const skipResolved = skipDir ? path.resolve(skipDir) : null;
+  // Only skip a destination tree that lives inside the source tree.
+  const skip =
+    skipResolved &&
+    skipResolved !== root &&
+    isInsideOrEqual(skipResolved, root)
+      ? skipResolved
+      : null;
 
   async function walk(current) {
-    if (skip && path.resolve(current) === skip) return;
+    if (skip && isInsideOrEqual(current, skip)) return;
     let entries;
     try {
       entries = await fs.promises.readdir(current, { withFileTypes: true });
@@ -55,7 +87,7 @@ async function listPhotos(dir, skipDir) {
     for (const entry of entries) {
       if (entry.name.startsWith('.')) continue;
       const full = path.join(current, entry.name);
-      if (entry.isDirectory()) {
+      if (await isDirectoryEntry(entry, full)) {
         await walk(full);
       } else if (IMAGE_EXT.has(path.extname(entry.name).toLowerCase())) {
         out.push(full);
@@ -63,7 +95,7 @@ async function listPhotos(dir, skipDir) {
     }
   }
 
-  await walk(dir);
+  await walk(root);
   out.sort((a, b) => a.localeCompare(b));
   return out;
 }
@@ -410,11 +442,30 @@ function destinationsFor(file, clusters, outputDir) {
 async function applyMoves(plan, options, onProgress) {
   const action = options.action === 'copy' ? 'copy' : 'move';
   const outputDir = path.resolve(options.outputDir);
+  const skipClusters = new Set(options.skipClusterIds || []);
   const operations = [];
   const errors = [];
+  let skipped = 0;
 
   for (let i = 0; i < plan.files.length; i += 1) {
     const file = plan.files[i];
+    // Excluded person cards stay in their original folder.
+    if (
+      skipClusters.size &&
+      file.clusterIds?.length &&
+      file.clusterIds.some((id) => skipClusters.has(id))
+    ) {
+      skipped += 1;
+      if (onProgress) {
+        onProgress({
+          phase: 'apply',
+          current: i + 1,
+          total: plan.files.length,
+          file: file.src
+        });
+      }
+      continue;
+    }
     const destDirs = destinationsFor(file, plan.clusters, outputDir);
     try {
       const dests = [];
@@ -449,7 +500,8 @@ async function applyMoves(plan, options, onProgress) {
     outputDir,
     at: new Date().toISOString(),
     operations,
-    errors
+    errors,
+    skipped
   };
 
   await fs.promises.mkdir(outputDir, { recursive: true });

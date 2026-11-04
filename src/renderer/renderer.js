@@ -1,5 +1,7 @@
 const THEME_KEY = 'photo-classifier-theme';
 const VIEW_KEY = 'photo-classifier-view';
+const GRID_COLS_KEY = 'photo-classifier-grid-cols';
+const LARGE_PHOTO_MIN = 10;
 
 const state = {
   inputDir: null,
@@ -9,8 +11,10 @@ const state = {
   lastOutput: null,
   selectedIndex: 0,
   selectedByCluster: {},
-  mergeIds: new Set(),
-  view: localStorage.getItem(VIEW_KEY) || 'preview'
+  mergeOrder: [],
+  excludeIds: new Set(),
+  view: localStorage.getItem(VIEW_KEY) || 'preview',
+  gridCols: normalizeGridCols(localStorage.getItem(GRID_COLS_KEY))
 };
 
 const els = {
@@ -26,6 +30,10 @@ const els = {
   undoBtn: document.getElementById('undo-btn'),
   openOutputBtn: document.getElementById('open-output-btn'),
   mergeBtn: document.getElementById('merge-btn'),
+  floatingActions: document.getElementById('floating-actions'),
+  floatingHint: document.getElementById('floating-hint'),
+  excludeSmallBtn: document.getElementById('exclude-small-btn'),
+  excludeLargeBtn: document.getElementById('exclude-large-btn'),
   progressWrap: document.getElementById('progress-wrap'),
   progressText: document.getElementById('progress-text'),
   progressCount: document.getElementById('progress-count'),
@@ -45,6 +53,11 @@ const els = {
   appVersion: document.getElementById('app-version'),
   updateBtn: document.getElementById('update-btn')
 };
+
+function normalizeGridCols(value) {
+  const n = Number(value);
+  return n === 3 || n === 10 ? n : 5;
+}
 
 function selectedValue(name) {
   return document.querySelector(`input[name="${name}"]:checked`).value;
@@ -108,6 +121,10 @@ function findCluster(id) {
   return state.plan?.clusters.find((cluster) => cluster.id === id) || null;
 }
 
+function photoCount(cluster) {
+  return (cluster.filePaths || cluster.sampleFiles || []).length;
+}
+
 function kindLabel(file, clusters) {
   if (file.kind === 'failed') return '_failed';
   if (file.kind === 'no_face') return '_no_face';
@@ -150,10 +167,81 @@ function setView(view) {
   els.tabList.setAttribute('aria-selected', String(!isPreview));
 }
 
-function updateMergeUi() {
-  const count = state.mergeIds.size;
+function setGridCols(cols) {
+  state.gridCols = normalizeGridCols(cols);
+  localStorage.setItem(GRID_COLS_KEY, String(state.gridCols));
+  els.candidateGrid.classList.remove('cols-3', 'cols-5', 'cols-10');
+  els.candidateGrid.classList.add(`cols-${state.gridCols}`);
+  const radio = document.querySelector(`input[name="grid-cols"][value="${state.gridCols}"]`);
+  if (radio) radio.checked = true;
+}
+
+function clearMergeSelection() {
+  state.mergeOrder = [];
+}
+
+function isPicked(id) {
+  return state.mergeOrder.includes(id);
+}
+
+function setMergePicked(id, picked) {
+  if (picked) {
+    if (!state.mergeOrder.includes(id)) state.mergeOrder.push(id);
+    return;
+  }
+  state.mergeOrder = state.mergeOrder.filter((item) => item !== id);
+}
+
+function toggleMergeId(id) {
+  setMergePicked(id, !isPicked(id));
+}
+
+function syncCardPickState(card) {
+  if (!card) return;
+  const id = card.dataset.clusterId;
+  const picked = isPicked(id);
+  const excluded = state.excludeIds.has(id);
+  const anchor = state.mergeOrder[0] === id;
+  card.classList.toggle('picked', picked);
+  card.classList.toggle('merge-anchor', picked && anchor);
+  card.classList.toggle('excluded', excluded);
+  const checkbox = card.querySelector('input[type="checkbox"][data-merge-id]');
+  if (checkbox) checkbox.checked = picked;
+  const excludeBtn = card.querySelector('.exclude-btn');
+  if (excludeBtn) {
+    excludeBtn.textContent = excluded ? 'Dikecualikan' : 'Kecualikan';
+    excludeBtn.setAttribute('aria-pressed', String(excluded));
+  }
+}
+
+function updateFloatingUi() {
+  const hasPlan = Boolean(state.plan);
+  els.floatingActions.hidden = !hasPlan;
+  if (!hasPlan) return;
+
+  const count = state.mergeOrder.length;
   els.mergeBtn.hidden = count < 2;
   els.mergeBtn.textContent = count > 1 ? `Gabungkan (${count})` : 'Gabungkan';
+
+  const anchor = findCluster(state.mergeOrder[0]);
+  const excluded = state.excludeIds.size;
+  const parts = [];
+  if (count === 0) {
+    parts.push('Centang 1 kartu, lalu klik kartu lain untuk digabung');
+  } else if (count === 1) {
+    parts.push(`Anchor: ${anchor?.name || '…'} · klik kartu lain`);
+  } else {
+    parts.push(`Gabung → ${anchor?.name || '…'} (${count} kartu)`);
+  }
+  if (excluded) parts.push(`${excluded} dikecualikan (tetap folder asli)`);
+  els.floatingHint.textContent = parts.join(' · ');
+}
+
+function updateMergeUi() {
+  updateFloatingUi();
+  for (const card of els.candidateGrid.querySelectorAll('.candidate-card')) {
+    syncCardPickState(card);
+  }
 }
 
 function setCardHero(card, src) {
@@ -178,13 +266,24 @@ function renderCandidates(plan) {
     const files = filesForCluster(cluster);
     const selectedSrc = state.selectedByCluster[cluster.id] || files[0]?.src || '';
     const selectedFile = files.find((file) => file.src === selectedSrc) || files[0];
-    const picked = state.mergeIds.has(cluster.id);
+    const picked = isPicked(cluster.id);
+    const excluded = state.excludeIds.has(cluster.id);
+    const anchor = picked && state.mergeOrder[0] === cluster.id;
+    const classes = [
+      'candidate-card',
+      picked ? 'picked' : '',
+      anchor ? 'merge-anchor' : '',
+      excluded ? 'excluded' : ''
+    ].filter(Boolean).join(' ');
 
     return `
-      <article class="candidate-card${picked ? ' picked' : ''}" data-cluster-id="${escapeHtml(cluster.id)}">
+      <article class="${classes}" data-cluster-id="${escapeHtml(cluster.id)}">
         <div class="candidate-head">
           <input type="checkbox" data-merge-id="${escapeHtml(cluster.id)}" ${picked ? 'checked' : ''} aria-label="Pilih untuk digabung" />
           <input class="candidate-name" data-cluster-id="${escapeHtml(cluster.id)}" value="${escapeHtml(cluster.name)}" />
+          <button type="button" class="exclude-btn" data-exclude-id="${escapeHtml(cluster.id)}" aria-pressed="${excluded}">
+            ${excluded ? 'Dikecualikan' : 'Kecualikan'}
+          </button>
           <span class="candidate-count">${cluster.faceCount} wajah · ${files.length} foto</span>
         </div>
         <div class="candidate-hero">
@@ -209,7 +308,7 @@ function renderCandidates(plan) {
     `;
   }).join('');
 
-  updateMergeUi();
+  updateFloatingUi();
 }
 
 function renderList(plan) {
@@ -230,10 +329,14 @@ function renderList(plan) {
 function renderPlan(plan) {
   state.plan = plan;
   els.results.hidden = !plan;
-  if (!plan) return;
+  if (!plan) {
+    els.floatingActions.hidden = true;
+    return;
+  }
 
   const validIds = new Set(plan.clusters.map((cluster) => cluster.id));
-  state.mergeIds = new Set([...state.mergeIds].filter((id) => validIds.has(id)));
+  state.mergeOrder = state.mergeOrder.filter((id) => validIds.has(id));
+  state.excludeIds = new Set([...state.excludeIds].filter((id) => validIds.has(id)));
   const nextSelected = {};
   for (const cluster of plan.clusters) {
     const files = filesForCluster(cluster);
@@ -257,6 +360,8 @@ function renderPlan(plan) {
   renderCandidates(plan);
   renderList(plan);
   setView(state.view);
+  setGridCols(state.gridCols);
+  updateFloatingUi();
 }
 
 function setProgress(data) {
@@ -289,32 +394,87 @@ async function pick(which, title, fallback) {
   el.title = dir;
 }
 
+function excludeBySize(kind) {
+  if (!state.plan) return;
+  let n = 0;
+  for (const cluster of state.plan.clusters) {
+    const count = photoCount(cluster);
+    const match = kind === 'small' ? count <= 1 : count >= LARGE_PHOTO_MIN;
+    if (!match) continue;
+    state.excludeIds.add(cluster.id);
+    setMergePicked(cluster.id, false);
+    n += 1;
+  }
+  updateMergeUi();
+  showMessage(
+    n
+      ? `${n} kartu ${kind === 'small' ? 'kecil' : 'besar'} dikecualikan — tetap di folder asli saat Terapkan.`
+      : `Tidak ada kartu ${kind === 'small' ? 'kecil (1 foto)' : `besar (≥${LARGE_PHOTO_MIN} foto)`}.`
+  );
+}
+
 applyTheme(localStorage.getItem(THEME_KEY) || 'system');
 setView(state.view);
+setGridCols(state.gridCols);
 
 els.themeBtn.addEventListener('click', cycleTheme);
 els.tabPreview.addEventListener('click', () => setView('preview'));
 els.tabList.addEventListener('click', () => setView('list'));
 
+for (const input of document.querySelectorAll('input[name="grid-cols"]')) {
+  input.addEventListener('change', () => {
+    if (input.checked) setGridCols(input.value);
+  });
+}
+
+els.excludeSmallBtn.addEventListener('click', () => excludeBySize('small'));
+els.excludeLargeBtn.addEventListener('click', () => excludeBySize('large'));
+
 els.candidateGrid.addEventListener('click', (event) => {
-  const checkbox = event.target.closest('input[type="checkbox"][data-merge-id]');
-  if (checkbox) {
-    const id = checkbox.dataset.mergeId;
-    if (checkbox.checked) state.mergeIds.add(id);
-    else state.mergeIds.delete(id);
-    const card = checkbox.closest('.candidate-card');
-    if (card) card.classList.toggle('picked', checkbox.checked);
+  const excludeBtn = event.target.closest('.exclude-btn');
+  if (excludeBtn) {
+    event.stopPropagation();
+    const id = excludeBtn.dataset.excludeId;
+    if (state.excludeIds.has(id)) state.excludeIds.delete(id);
+    else {
+      state.excludeIds.add(id);
+      setMergePicked(id, false);
+    }
     updateMergeUi();
     return;
   }
 
+  const checkbox = event.target.closest('input[type="checkbox"][data-merge-id]');
+  if (checkbox) {
+    event.stopPropagation();
+    const id = checkbox.dataset.mergeId;
+    setMergePicked(id, checkbox.checked);
+    updateMergeUi();
+    return;
+  }
+
+  if (event.target.closest('.candidate-name')) return;
+
   const thumb = event.target.closest('.candidate-thumb');
-  if (!thumb) return;
-  const card = thumb.closest('.candidate-card');
+  if (thumb) {
+    const card = thumb.closest('.candidate-card');
+    if (!card) return;
+    const clusterId = card.dataset.clusterId;
+    state.selectedByCluster[clusterId] = thumb.dataset.src;
+    setCardHero(card, thumb.dataset.src);
+    return;
+  }
+
+  const card = event.target.closest('.candidate-card');
   if (!card) return;
-  const clusterId = card.dataset.clusterId;
-  state.selectedByCluster[clusterId] = thumb.dataset.src;
-  setCardHero(card, thumb.dataset.src);
+
+  // After first checkbox/card select, whole-card clicks toggle merge selection.
+  if (state.mergeOrder.length === 0) {
+    setMergePicked(card.dataset.clusterId, true);
+  } else {
+    toggleMergeId(card.dataset.clusterId);
+  }
+  updateMergeUi();
 });
 
 let renameTimer;
@@ -328,12 +488,13 @@ els.candidateGrid.addEventListener('input', (event) => {
   renameTimer = setTimeout(async () => {
     await window.api.renameCluster({ clusterId: cluster.id, name: cluster.name });
     renderList(state.plan);
+    updateFloatingUi();
   }, 220);
 });
 
 els.mergeBtn.addEventListener('click', async () => {
-  if (state.mergeIds.size < 2) return;
-  const ids = [...state.mergeIds];
+  if (state.mergeOrder.length < 2) return;
+  const ids = [...state.mergeOrder];
   const first = findCluster(ids[0]);
   const result = await window.api.mergeClusters({
     clusterIds: ids,
@@ -343,9 +504,10 @@ els.mergeBtn.addEventListener('click', async () => {
     showMessage(result.error || 'Gagal menggabungkan.', true);
     return;
   }
-  state.mergeIds = new Set();
+  clearMergeSelection();
+  // Keep exclude on surviving keep-id if it was excluded; drop merged-away ids via renderPlan filter.
   renderPlan(result.plan);
-  showMessage(`Digabung menjadi ${findCluster(ids[0])?.name || 'satu orang'}.`);
+  showMessage(`Digabung menjadi ${first?.name || 'satu orang'}.`);
 });
 
 els.fileRows.addEventListener('click', (event) => {
@@ -397,7 +559,8 @@ function scheduleReclassify() {
       groupMode: selectedValue('group-mode')
     });
     if (result.ok) {
-      state.mergeIds = new Set();
+      clearMergeSelection();
+      state.excludeIds = new Set();
       renderPlan(result.plan);
     }
   }, 280);
@@ -417,7 +580,8 @@ els.scanBtn.addEventListener('click', async () => {
   showMessage('');
   state.selectedIndex = 0;
   state.selectedByCluster = {};
-  state.mergeIds = new Set();
+  clearMergeSelection();
+  state.excludeIds = new Set();
   els.mergeBtn.hidden = true;
   renderPlan(null);
   setBusy(true);
@@ -436,11 +600,12 @@ els.scanBtn.addEventListener('click', async () => {
   setProgress(null);
   state.selectedIndex = 0;
   state.selectedByCluster = {};
-  state.mergeIds = new Set();
+  clearMergeSelection();
+  state.excludeIds = new Set();
   setView('preview');
   renderPlan(result.plan);
   showMessage(result.plan.stats.total
-    ? 'Pratinjau siap. Centang beberapa kartu lalu Gabungkan jika salah pisah.'
+    ? 'Pratinjau siap. Centang 1 kartu, lalu klik kartu lain untuk digabung.'
     : 'Tidak ada foto di folder itu.');
 });
 
@@ -460,7 +625,8 @@ els.applyBtn.addEventListener('click', async () => {
   const result = await window.api.apply({
     outputDir: opts.outputDir,
     action: opts.action,
-    clusterNames: clusterNames()
+    clusterNames: clusterNames(),
+    skipClusterIds: [...state.excludeIds]
   });
   setBusy(false);
   setProgress(null);
@@ -472,7 +638,15 @@ els.applyBtn.addEventListener('click', async () => {
   els.undoBtn.hidden = false;
   els.openOutputBtn.hidden = false;
   const errorCount = result.log.errors.length;
-  showMessage(errorCount ? `Selesai dengan ${errorCount} error. Cek errors.log.` : 'File sudah dikelompokkan.');
+  const skipped = result.log.skipped || 0;
+  const bits = [];
+  if (errorCount) bits.push(`${errorCount} error`);
+  if (skipped) bits.push(`${skipped} dikecualikan`);
+  showMessage(
+    bits.length
+      ? `Selesai dengan ${bits.join(', ')}.${errorCount ? ' Cek errors.log.' : ''}`
+      : 'File sudah dikelompokkan.'
+  );
 });
 
 els.undoBtn.addEventListener('click', async () => {
